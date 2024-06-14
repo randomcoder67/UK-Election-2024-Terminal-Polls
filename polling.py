@@ -9,6 +9,16 @@ from bs4 import BeautifulSoup
 RESET_COLOUR = "\033[0m"
 BLOCK_CHARACTERS = ["▂", "▄", "▆", "█"]
 VERTICAL_BAR_NORMAL = "|"
+TWO_LETTER_NAMES = {
+	"LAB": "LB",
+	"CON": "CN",
+	"REF": "RF",
+	"LD": "LD",
+	"GRN": "GR",
+	"SNP": "SN",
+	"PC": "PC",
+	"UKIP": "UK",
+}
 #VERTICAL_BAR_TICK = "|"
 
 def getBBCPolls(pollResults):
@@ -46,7 +56,7 @@ def getPoliticoPolls(pollResults):
 		"SNP": "SNP",
 		"BP": "REF",
 		"PLPW": "PC",
-		"UKIP": "UKP",
+		"UKIP": "UKIP",
 	}
 	
 	r = requests.get("https://www.politico.eu/wp-json/politico/v1/poll-of-polls/GB-parliament")
@@ -78,9 +88,9 @@ def printWithOffset(string, offset, colour=""):
 	moveCursor(0, offset)
 	print(f"{colour}{string}{RESET_COLOUR}")
 
-def padStr(x):
+def padStr(x, char=" "):
 	if x < 10:
-		return " " + str(x)
+		return char + str(x)
 	return str(x)
 
 def roundToBase(x, base):
@@ -118,7 +128,6 @@ def getBlockChar(height):
 
 def printBar(value, width, offset, colour):
 	moveCursor(1, 0)
-	
 	for x in reversed(range(0, 55, 5)):
 		if x < value:
 			#printWithOffset(str(x), offset, colour=colour)
@@ -131,13 +140,20 @@ def printBar(value, width, offset, colour):
 	
 	resetCursor(12)
 
+def printData(party, value, offset, colour):
+	moveCursor(13, 0)
+	printWithOffset(padStr(int(value), char="0"), offset, colour=colour)
+	printWithOffset(TWO_LETTER_NAMES[party], offset, colour=colour)
+	resetCursor(15)
+
 def printGraph(data, source, colours, hOffset):
 	results = sorted(data[source]["results"].items(), key=lambda item: item[1], reverse=True)
-	printWithOffset(f"{source} ({data[source]['date']}):", hOffset)
+	printWithOffset(f"          {source} ({data[source]['date']}):", hOffset)
 	printScale(hOffset)
 	printBottomBar(len(results), hOffset)
 	for i, (key, val) in enumerate(results):
 		printBar(int(val), 2, hOffset + 6 + i * 4, colours[key])
+		printData(key, int(val), hOffset + 6 + i * 4, colours[key])
 		#notify(key)
 	
 
@@ -156,7 +172,7 @@ def renderGraphs(data):
 		"GRN": "\033[38;2;88;171;39;1m",
 		"SNP": "\033[38;2;250;205;80;1m",
 		"PC": "\033[38;2;70;163;92;1m",
-		"UKP": "\033[38;2;120;52;115;1m",
+		"UKIP": "\033[38;2;120;52;115;1m",
 	}
 	printGraph(data, "BBC", colours, 0)
 	printGraph(data, "Politico", colours, 40)

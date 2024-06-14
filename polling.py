@@ -4,6 +4,7 @@ import requests
 import re
 import json
 import subprocess
+from datetime import datetime
 from bs4 import BeautifulSoup
 
 RESET_COLOUR = "\033[0m"
@@ -21,6 +22,10 @@ TWO_LETTER_NAMES = {
 }
 #VERTICAL_BAR_TICK = "|"
 
+def getYouGov(pollResults):
+	#r = request.get("https://yougov.co.uk/_pubapis/v5/uk/trackers/voting-intention/overall/")
+	return pollResults
+
 def getBBCPolls(pollResults):
 	classes = ["party-label--core LAB", "party-label--core CON", "party-label--core REF", "party-label--core LD", "party-label--core GRN", "party-label--core SNP", "party-label--core PC"]
 	
@@ -32,7 +37,8 @@ def getBBCPolls(pollResults):
 	
 	date = soup.find_all("h2", {"class": "chart__title"})[0].text
 	dateText = re.findall("[0-9][0-9]? [A-Za-z]* [0-9]{4}", date)[0]
-	pollResults["BBC"]["date"] = dateText
+	parsedDate = datetime.strptime(dateText, "%d %B %Y")
+	pollResults["BBC"]["date"] = parsedDate
 	
 	for c in classes:
 		a = soup.find_all("li", {"class": c})
@@ -67,7 +73,10 @@ def getPoliticoPolls(pollResults):
 	lenA = len(polls["trends"]["kalman"])
 	latestPolls = polls["trends"]["kalman"][lenA-1]
 	
-	pollResults["Politico"]["date"] = latestPolls["date"]
+	dateText = latestPolls["date"]
+	parsedDate = datetime.strptime(dateText, "%Y-%m-%d")
+	pollResults["Politico"]["date"] = parsedDate
+	
 	for key, val in polToApprv.items():
 		pollResults["Politico"]["results"][val] = round(latestPolls["parties"][key])
 	
@@ -99,19 +108,6 @@ def roundToBase(x, base):
 def resetCursor(height):
 	moveCursor(-height, -1000)
 
-def printScale(offset):
-	for x in reversed(range(12)):
-		if x % 2 == 0:
-			printWithOffset(padStr(x*5) + " " + VERTICAL_BAR_NORMAL, offset)
-		else:
-			printWithOffset("   " + VERTICAL_BAR_NORMAL, offset)
-	resetCursor(13)
-
-def printBottomBar(length, offset):
-	moveCursor(12, 0)
-	printWithOffset("+" + "-" * (length * 4 + 2), offset + 3)
-	resetCursor(13)
-
 def notify(i):
 	subprocess.run(["notify-send", str(i)])
 
@@ -124,7 +120,19 @@ def getBlockChar(height):
 		return BLOCK_CHARACTERS[2]
 	else:
 		return BLOCK_CHARACTERS[3]
-		
+
+def printScale(offset):
+	for x in reversed(range(12)):
+		if x % 2 == 0:
+			printWithOffset(padStr(x*5) + " " + VERTICAL_BAR_NORMAL, offset)
+		else:
+			printWithOffset("   " + VERTICAL_BAR_NORMAL, offset)
+	resetCursor(13)
+
+def printBottomBar(length, offset):
+	moveCursor(12, 0)
+	printWithOffset("+" + "-" * (length * 4 + 2), offset + 3)
+	resetCursor(13)		
 
 def printBar(value, width, offset, colour):
 	moveCursor(1, 0)
@@ -148,9 +156,12 @@ def printData(party, value, offset, colour):
 
 def printGraph(data, source, colours, hOffset):
 	results = sorted(data[source]["results"].items(), key=lambda item: item[1], reverse=True)
-	printWithOffset(f"          {source} ({data[source]['date']}):", hOffset)
+	
+	formattedDate = datetime.strftime(data[source]["date"], "%d %B %Y")
+	printWithOffset(f"{source} ({formattedDate}):", hOffset + 10)
 	printScale(hOffset)
 	printBottomBar(len(results), hOffset)
+	
 	for i, (key, val) in enumerate(results):
 		printBar(int(val), 2, hOffset + 6 + i * 4, colours[key])
 		printData(key, int(val), hOffset + 6 + i * 4, colours[key])
@@ -189,6 +200,10 @@ def run():
 			"results": {},
 		},
 		"Politico": {
+			"date": "",
+			"results": {},
+		},
+		"YouGov": {
 			"date": "",
 			"results": {},
 		},

@@ -6,6 +6,16 @@ Pulls poll data from the [BBC Election Tracker](https://www.bbc.co.uk/news/uk-po
 
 ![Screenshot of program in use](terminalPollingScreenshot.png)
 
+## Requirements
+
+Python and BeautifulSoup4 are the only requirements
+
+BeautifulSoup4 can be installed with pip using this command:  
+`pip install beautifulsoup4`
+
+On Arch Linux it can be installed with pacman:  
+`pacman -s python-beautifulsoup4`
+
 ## Usage
 
 `python3 polling.py` will display the polling data in the terminal

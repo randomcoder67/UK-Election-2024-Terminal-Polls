@@ -7,6 +7,9 @@ import subprocess
 from bs4 import BeautifulSoup
 
 RESET_COLOUR = "\033[0m"
+BLOCK_CHARACTERS = ["▂", "▄", "▆", "█"]
+VERTICAL_BAR_NORMAL = "|"
+#VERTICAL_BAR_TICK = "|"
 
 def getBBCPolls(pollResults):
 	classes = ["party-label--core LAB", "party-label--core CON", "party-label--core REF", "party-label--core LD", "party-label--core GRN", "party-label--core SNP", "party-label--core PC"]
@@ -71,11 +74,8 @@ def moveCursor(down, right):
 		print("\033[" + str(right) + "C", end="")
 
 def printWithOffset(string, offset, colour=""):
-	#print("I")
 	moveCursor(0, -1000)
-	#print("A")
 	moveCursor(0, offset)
-	#print("B")
 	print(f"{colour}{string}{RESET_COLOUR}")
 
 def padStr(x):
@@ -90,32 +90,40 @@ def resetCursor(height):
 	moveCursor(-height, -1000)
 
 def printScale(offset):
-	normalBar = "┃"
-	tickBar = "┫"
 	for x in reversed(range(12)):
 		if x % 2 == 0:
-			printWithOffset(padStr(x*5) + " " + tickBar, offset)
+			printWithOffset(padStr(x*5) + " " + VERTICAL_BAR_NORMAL, offset)
 		else:
-			printWithOffset("   " + normalBar, offset)
+			printWithOffset("   " + VERTICAL_BAR_NORMAL, offset)
 	resetCursor(13)
 
 def printBottomBar(length, offset):
 	moveCursor(12, 0)
-	printWithOffset("┻" + "━" * (length * 4 + 2), offset + 3)
+	printWithOffset("+" + "-" * (length * 4 + 2), offset + 3)
 	resetCursor(13)
 
 def notify(i):
 	subprocess.run(["notify-send", str(i)])
 
+def getBlockChar(height):
+	if height <= 1.25:
+		return BLOCK_CHARACTERS[0]
+	elif height <= 2.5:
+		return BLOCK_CHARACTERS[1]
+	elif height <= 3.75:
+		return BLOCK_CHARACTERS[2]
+	else:
+		return BLOCK_CHARACTERS[3]
+		
+
 def printBar(value, width, offset, colour):
-	barChar = "█"
-	height = roundToBase(value, 5)
-	#height = height/20
 	moveCursor(1, 0)
 	
-	for x in reversed(range(5, 60, 5)):
-		if x <= height:
+	for x in reversed(range(0, 55, 5)):
+		if x < value:
 			#printWithOffset(str(x), offset, colour=colour)
+			height = roundToBase(value - x, 1.25)
+			barChar = getBlockChar(height)
 			printWithOffset(barChar * width, offset, colour=colour)
 		else:
 			#printWithOffset(str(x), offset, colour=colour)
@@ -150,13 +158,10 @@ def renderGraphs(data):
 		"PC": "\033[38;2;70;163;92;1m",
 		"UKP": "\033[38;2;120;52;115;1m",
 	}
-	#print('\033[6n')
-	#print("Before")
-	#moveCursor(10, 5)
-	#print("After")
 	printGraph(data, "BBC", colours, 0)
 	printGraph(data, "Politico", colours, 40)
 	moveCursor(17, 0)
+	#print(data)
 	
 	#for key, val in colours.items():
 		#print(f"{val}{whiteBackground}{key}{resetColour}")

@@ -2,7 +2,7 @@
 
 A simple Python script to display current average UK election polling in the terminal.
 
-Pulls poll data from the [BBC Election Tracker](https://www.bbc.co.uk/news/uk-politics-68079726) and the [Politico Poll of Polls](https://www.politico.eu/europe-poll-of-polls/united-kingdom/). 
+Pulls poll data from the [BBC Election Tracker](https://www.bbc.co.uk/news/uk-politics-68079726), the [Politico Poll of Polls](https://www.politico.eu/europe-poll-of-polls/united-kingdom/) and [YouGov](https://yougov.co.uk/topics/politics/trackers/voting-intention).
 
 ![Screenshot of program in use](terminalPollingScreenshot.png)
 

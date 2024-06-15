@@ -4,7 +4,7 @@ import requests
 import re
 import json
 import subprocess
-from datetime import datetime
+from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
 
 RESET_COLOUR = "\033[0m"
@@ -19,11 +19,26 @@ TWO_LETTER_NAMES = {
 	"SNP": "SN",
 	"PC": "PC",
 	"UKIP": "UK",
+	"OTH": "OT",
 }
 #VERTICAL_BAR_TICK = "|"
 
-def getYouGov(pollResults):
-	#r = request.get("https://yougov.co.uk/_pubapis/v5/uk/trackers/voting-intention/overall/")
+def getYouGovPolls(pollResults):
+	parties = ["CON", "LAB", "LD", "SNP", "PC", "REF", "GRN", "OTH"]
+	r = requests.get("https://yougov.co.uk/_pubapis/v5/uk/trackers/voting-intention/overall/")
+	data = json.loads(r.text)
+	
+	numDays = len(data["values"][0]) - 1
+	
+	firstDay = datetime.strptime("2020-01-26", "%Y-%m-%d")
+	latestDay = firstDay + timedelta(days=numDays)
+	pollResults["YouGov"]["date"] = latestDay
+	
+	for i in range(8):
+		num = len(data["values"][i])
+		pollingData = data["values"][i][num-1]
+		pollResults["YouGov"]["results"][parties[i]] = round(pollingData)
+	
 	return pollResults
 
 def getBBCPolls(pollResults):
@@ -184,9 +199,11 @@ def renderGraphs(data):
 		"SNP": "\033[38;2;250;205;80;1m",
 		"PC": "\033[38;2;70;163;92;1m",
 		"UKIP": "\033[38;2;120;52;115;1m",
+		"OTH": "\033[38;2;90;90;90;1m",
 	}
 	printGraph(data, "BBC", colours, 0)
-	printGraph(data, "Politico", colours, 40)
+	printGraph(data, "Politico", colours, 34)
+	printGraph(data, "YouGov", colours, 72)
 	moveCursor(17, 0)
 	#print(data)
 	
@@ -210,6 +227,7 @@ def run():
 	}
 	pollResults = getBBCPolls(pollResults)
 	pollResults = getPoliticoPolls(pollResults)
+	pollResults = getYouGovPolls(pollResults)
 	#pollResults = {'BBC': {'date': '13 June 2024', 'results': {'LAB': 42, 'CON': 22, 'REF': 14, 'LD': 10, 'GRN': 6, 'SNP': 3, 'PC': 1}}, 'Politico': {'date': '2024-06-10', 'results': {'CON': 21, 'LAB': 44, 'LD': 10, 'GRN': 5, 'SNP': 3, 'REF': 15, 'PC': 1, 'UKP': 1}}}
 	renderGraphs(pollResults)
 	#print(pollResults)

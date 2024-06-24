@@ -3,6 +3,7 @@
 import requests
 import re
 import json
+import os
 import subprocess
 from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
@@ -21,6 +22,7 @@ TWO_LETTER_NAMES = {
 	"UKIP": "UK",
 	"OTH": "OT",
 }
+
 #VERTICAL_BAR_TICK = "|"
 
 def getYouGovPolls(pollResults):
@@ -77,7 +79,7 @@ def getPoliticoPolls(pollResults):
 		"SNP": "SNP",
 		"BP": "REF",
 		"PLPW": "PC",
-		"UKIP": "UKIP",
+		#"UKIP": "UKIP",
 	}
 	
 	r = requests.get("https://www.politico.eu/wp-json/politico/v1/poll-of-polls/GB-parliament")
@@ -146,7 +148,7 @@ def printScale(offset):
 
 def printBottomBar(length, offset):
 	moveCursor(12, 0)
-	printWithOffset("+" + "-" * (length * 4 + 2), offset + 3)
+	printWithOffset("+" + "-" * length, offset + 3)
 	resetCursor(13)		
 
 def printBar(value, width, offset, colour):
@@ -169,21 +171,27 @@ def printData(party, value, offset, colour):
 	printWithOffset(TWO_LETTER_NAMES[party], offset, colour=colour)
 	resetCursor(15)
 
-def printGraph(data, source, colours, hOffset):
+def printGraph(data, source, colours, hOffset, barSpacing):
 	results = sorted(data[source]["results"].items(), key=lambda item: item[1], reverse=True)
 	
 	formattedDate = datetime.strftime(data[source]["date"], "%d %B %Y")
-	printWithOffset(f"{source} ({formattedDate}):", hOffset + 10)
+	printWithOffset(f"{source} ({formattedDate}):", hOffset)
 	printScale(hOffset)
-	printBottomBar(len(results), hOffset)
+	
+	graphLen = (barSpacing + 2) * len(results) + barSpacing
+	printBottomBar(graphLen, hOffset)
+	
+	barInitialOffset = hOffset + 4 + barSpacing
 	
 	for i, (key, val) in enumerate(results):
-		printBar(int(val), 2, hOffset + 6 + i * 4, colours[key])
-		printData(key, int(val), hOffset + 6 + i * 4, colours[key])
+		printBar(int(val), 2, barInitialOffset + i * (2 + barSpacing), colours[key])
+		printData(key, int(val), barInitialOffset + i * (2 + barSpacing), colours[key])
 		#notify(key)
 	
+	return graphLen + 4
+	
 
-def renderGraphs(data):
+def renderGraphs(data, config):
 	# https://superuser.com/questions/1713969/how-to-put-colors-in-terminal
 	#printf '\e[38;2;240;100;200m\e[48;2;200;255;50mHello World!\e[0m\n'
 	resetColour = "\033[0m"
@@ -201,16 +209,75 @@ def renderGraphs(data):
 		"UKIP": "\033[38;2;120;52;115;1m",
 		"OTH": "\033[38;2;90;90;90;1m",
 	}
-	printGraph(data, "BBC", colours, 0)
-	printGraph(data, "Politico", colours, 34)
-	printGraph(data, "YouGov", colours, 72)
+	
+	
+	graph1Len = printGraph(data, "BBC", colours, 0, config["barSpacing"])
+	
+	secondGraphPadding = graph1Len + config["graphSpacing"]
+	if config["rows"] == 3:
+		secondGraphPadding = 0
+		moveCursor(17, 0)
+	graph2Len = printGraph(data, "Politico", colours, secondGraphPadding, config["barSpacing"])
+	
+	thirdGraphPadding = graph1Len + graph2Len + config["graphSpacing"] * 2
+	if config["rows"] > 1:
+		thirdGraphPadding = 0
+		moveCursor(17, 0)
+	printGraph(data, "YouGov", colours, thirdGraphPadding, config["barSpacing"])
+	
 	moveCursor(17, 0)
 	#print(data)
 	
 	#for key, val in colours.items():
 		#print(f"{val}{whiteBackground}{key}{resetColour}")
 
+def getConfig():
+	config = {
+		"terminalWidth": 0,
+		"rows": 1,
+		"graphsPerRow": 3,
+		"graphSpacing": 1,
+		"barSpacing": 2,
+	}
+	width = os.get_terminal_size().columns
+	config["terminalWidth"] = width
+	
+	# Default,
+	if width >= 113:
+		return config
+	# Reduce graph spacing
+	elif width >= 111:
+		config["graphSpacing"] = 0
+		return config
+	# Reduce bar spacing
+	elif width >= 87:
+		config["graphSpacing"] = 1
+		config["barSpacing"] = 1
+		return config
+	elif width >= 85:
+		config["graphSpacing"] = 0
+		config["barSpacing"] = 1
+		return config
+	else:
+		print("Error, terminal too narrow")
+		exit(1)
+		return config
+	'''
+	elif width >= 74:
+		config["rows"] = 2
+		return config
+	elif width >= 72:
+		config["rows"] = 2
+		config["graphSpacing"] = 0
+		return config
+	'''
+	
+	
+	
+
 def run():
+	config = getConfig()
+	
 	pollResults = {
 		"BBC": {
 			"date": "",
@@ -229,7 +296,7 @@ def run():
 	pollResults = getPoliticoPolls(pollResults)
 	pollResults = getYouGovPolls(pollResults)
 	#pollResults = {'BBC': {'date': '13 June 2024', 'results': {'LAB': 42, 'CON': 22, 'REF': 14, 'LD': 10, 'GRN': 6, 'SNP': 3, 'PC': 1}}, 'Politico': {'date': '2024-06-10', 'results': {'CON': 21, 'LAB': 44, 'LD': 10, 'GRN': 5, 'SNP': 3, 'REF': 15, 'PC': 1, 'UKP': 1}}}
-	renderGraphs(pollResults)
+	renderGraphs(pollResults, config)
 	#print(pollResults)
 
 if __name__ == "__main__":

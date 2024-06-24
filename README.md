@@ -28,7 +28,7 @@ On Arch Linux it can be installed with pacman:
 ## Notes
 
 * The colours used for each party are not the [exact party colours](https://en.wikipedia.org/wiki/Wikipedia:Index_of_United_Kingdom_political_parties_meta_attributes), I used the ones from Politico instead as they are easier to read.
-* UKIP is only present in the politico graph as the BBC doesn't have polling data for them
+* ~~UKIP is only present in the Politico graph as the BBC doesn't have polling data for them~~ Politico seem to have stopped tracking UKIP polling
 * The BBC graph will probably stop working once the election is over, I'll most likely just remove it then as I don't think the BBC have that data outside of election time.
 
 ## Register to Vote

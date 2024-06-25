@@ -4,11 +4,13 @@ import requests
 import re
 import json
 import os
+import sys
 import subprocess
 from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
 
 RESET_COLOUR = "\033[0m"
+BOLD_ESC = "\033[1m"
 BLOCK_CHARACTERS = ["▂", "▄", "▆", "█"]
 VERTICAL_BAR_NORMAL = "|"
 TWO_LETTER_NAMES = {
@@ -273,9 +275,92 @@ def getConfig():
 	'''
 	
 	
+def getElectoralCalculus():
+	parties = ["CON", "LAB", "LIB", "Reform", "Green", "SNP", "PlaidC", "Other"]
+	r = requests.get("https://www.electoralcalculus.co.uk/prediction_main.html")
+	data = {}
 	
+	soup = BeautifulSoup(r.text, features="lxml")
+	mainTable = soup.find_all("table")[0]
+	rows = mainTable.find_all("tr")
+	for row in rows:
+		cells = row.find_all("td")
+		if len(cells) > 0 and cells[0].text in parties:
+			party = cells[0].text
+			data[party] = {
+				"votes2019": cells[1].text.lstrip(),
+				"seats2019": cells[2].text.lstrip(),
+				"predVotes": cells[3].text.lstrip(),
+				"lowSeats": cells[4].text.lstrip(),
+				"predSeats": cells[5].text.lstrip(),
+				"highSeats": cells[6].text.lstrip(),
+			}
+	
+	return data
+	
+def printTableHeader():
+	print("")
+	print(f"   {BOLD_ESC}Party{RESET_COLOUR}  │ {BOLD_ESC}2019 Votes{RESET_COLOUR} │ {BOLD_ESC}2019 Seats{RESET_COLOUR} │ {BOLD_ESC}Pred Votes │ {BOLD_ESC}Low Seats{RESET_COLOUR} │ {BOLD_ESC}Pred Seats{RESET_COLOUR} │ {BOLD_ESC}High Seats{RESET_COLOUR} ")
+	print("  ────────┼────────────┼────────────┼────────────┼───────────┼────────────┼──────────── ")
+
+def printCenter(text, width, maxTextWidth, colour, end=True):
+	textLen = len(text)
+	textPadded = " " * (maxTextWidth - textLen) + text
+	totalPadding = width - maxTextWidth
+	remainder = totalPadding % 2
+	paddingStart =  " " * (int(totalPadding/2))
+	paddingEnd = " " * (int(totalPadding/2) + remainder)
+	
+	#print((int(totalPadding/2) + remainder), (int(totalPadding/2)))
+	
+	endChar = ""
+	if end:
+		endChar = "│"
+	print(f"{paddingStart}{colour}{textPadded}{RESET_COLOUR}{paddingEnd}{endChar}", end="")
+
+def printRow(partyData, name):
+	colours = {
+		"LAB": "\033[38;2;240;0;28;1m",
+		"CON": "\033[38;2;33;117;217;1m",
+		"Reform": "\033[38;2;41;219;201;1m",
+		"LIB": "\033[38;2;255;127;0;1m",
+		"Green": "\033[38;2;88;171;39;1m",
+		"SNP": "\033[38;2;250;205;80;1m",
+		"PlaidC": "\033[38;2;70;163;92;1m",
+		"Other": "\033[38;2;90;90;90;1m",
+	}
+
+	
+	# Print name, this is done seperately as it's left-align
+	namePadding = " " * (7 - len(name))
+	print(f"   {colours[name]}{name}{RESET_COLOUR}{namePadding}│", end="")
+	
+	printCenter(partyData["votes2019"], 12, 5, colours[name])
+	printCenter(partyData["seats2019"], 12, 3, colours[name])
+	printCenter(partyData["predVotes"], 12, 5, colours[name])
+	printCenter(partyData["lowSeats"], 11, 3, colours[name])
+	printCenter(partyData["predSeats"], 12, 3, colours[name])
+	printCenter(partyData["highSeats"], 12, 3, colours[name], end=False)
+	
+	# Print row divider
+	print("")
+	print("  ────────┼────────────┼────────────┼────────────┼───────────┼────────────┼──────────── ")
+
+def printElectoralCalculus(data):
+	printTableHeader()
+	for name, partyData in data.items():
+		printRow(partyData, name)
+
+
+def electoralCalculus():
+	data = getElectoralCalculus()
+	printElectoralCalculus(data)
 
 def run():
+	if len(sys.argv) == 2 and sys.argv[1] == "-s":
+		electoralCalculus()
+		return
+
 	config = getConfig()
 	
 	pollResults = {

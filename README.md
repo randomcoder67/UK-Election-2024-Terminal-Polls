@@ -9,6 +9,8 @@ A simple Python script to display current average UK election polling in the ter
 
 Pulls poll data from the [BBC Election Tracker](https://www.bbc.co.uk/news/uk-politics-68079726), the [Politico Poll of Polls](https://www.politico.eu/europe-poll-of-polls/united-kingdom/) and [YouGov](https://yougov.co.uk/topics/politics/trackers/voting-intention).
 
+Also pulls the estimated seat and vote count from [Electoral Calculus](https://www.electoralcalculus.co.uk/prediction_main.html).
+
 ![Screenshot of program in use](terminalPollingScreenshot.png)
 
 ## Requirements
@@ -23,7 +25,8 @@ On Arch Linux it can be installed with pacman:
 
 ## Usage
 
-`python3 polling.py` will display the polling data in the terminal
+`python3 polling.py` will display the polling data in the terminal  
+`python3 polling.py -s` will display the current Electoral Calculus election prediction
 
 ## Notes
 
